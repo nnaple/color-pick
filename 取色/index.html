@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>color-pick</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif;
+  background: #d5d8dd;
+  color: #2c3e50;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+}
+
+.page-wrap {
+  width: 1100px;
+  max-width: 96vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+header {
+  width: 100%;
+  padding: 28px 0 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+header h1 { font-size: 38px; font-weight: 400; letter-spacing: 6px; color: #1a1a2e; }
+header p { font-size: 13px; color: #95a5a6; margin-top: 6px; letter-spacing: 2px; }
+
+/* ── Main: two columns ── */
+main {
+  display: flex;
+  gap: 28px;
+  width: 100%;
+  align-items: flex-start;
+  padding-bottom: 28px;
+}
+
+/* ── Left Panel ── */
+.left-panel {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.canvas-area {
+  position: relative;
+  aspect-ratio: 4/3;
+  background: #F1EEF9;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-zone {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px;
+  border: 2px dashed #d0d7de; border-radius: 12px;
+  cursor: pointer; z-index: 2;
+  transition: border-color .2s, background .2s;
+}
+.upload-zone:hover { border-color: #4a90d9; background: #f8fafe; }
+.upload-zone.drag-over { border-color: #4a90d9; background: #eef3fc; }
+.upload-icon { width: 56px; height: 56px; opacity: .35; }
+.upload-zone .hint { font-size: 15px; color: #7f8c8d; letter-spacing: 1px; }
+.upload-zone .sub-hint { font-size: 12px; color: #b0b8c1; }
+.upload-zone .btn {
+  display: inline-block; padding: 9px 28px;
+  border: 1px solid #4a90d9; border-radius: 6px;
+  color: #4a90d9; font-size: 14px; cursor: pointer; letter-spacing: 1px;
+  transition: background .2s, color .2s;
+}
+.upload-zone .btn:hover { background: #4a90d9; color: #fff; }
+
+.canvas-wrap {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; cursor: crosshair;
+}
+.canvas-wrap canvas { max-width: 100%; max-height: 100%; display: block; }
+
+/* Replace image button */
+.replace-btn {
+  position: absolute; top: 10px; right: 10px; z-index: 5;
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  border: none; border-radius: 6px;
+  font-size: 12px; font-family: inherit; letter-spacing: 1px;
+  cursor: pointer; transition: background .2s;
+}
+.replace-btn:hover { background: rgba(0,0,0,.75); }
+.replace-btn svg { width: 14px; height: 14px; }
+
+/* Loupe area below canvas */
+.loupe-area {
+  background: #F1EEF9;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  margin-top: 12px;
+  padding: 14px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.loupe-area.visible { display: flex; }
+.loupe {
+  position: relative;
+  width: 100%; max-width: 420px; height: 180px;
+  border-radius: 8px;
+  border: 2px solid #e0e5ec;
+  overflow: hidden;
+}
+.loupe canvas { width: 100%; height: 100%; display: block; }
+.loupe .crosshair {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center; pointer-events: none;
+}
+.loupe .crosshair::before, .loupe .crosshair::after {
+  content: ''; position: absolute; background: rgba(255,255,255,.85);
+}
+.loupe .crosshair::before { width: 20px; height: 1px; }
+.loupe .crosshair::after  { width: 1px; height: 20px; }
+
+/* ── Right Panel ── */
+.right-panel { width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; }
+
+.card { background: #F1EEF9; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.06); padding: 18px 20px; }
+.card-title { font-size: 13px; letter-spacing: 2px; margin-bottom: 12px; font-weight: 700; color: #1a1a2e; }
+
+.swatch-large { width: 100%; height: 72px; border-radius: 8px; margin-bottom: 14px; background: #e0e0e0; transition: background .15s; }
+
+.color-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+.color-row:last-child { border-bottom: none; }
+.color-row .label { color: #7f8c8d; font-size: 13px; min-width: 42px; }
+.color-row .value { font-family: "SF Mono","Consolas","Microsoft YaHei",monospace; font-size: 13px; color: #2c3e50; letter-spacing: .5px; }
+.color-row .copy-btn {
+  background: none; border: 1px solid #e0e5ec; border-radius: 4px; padding: 3px 10px;
+  font-size: 11px; cursor: pointer; color: #7f8c8d; letter-spacing: 1px;
+  transition: all .15s; font-family: inherit;
+}
+.color-row .copy-btn:hover { border-color: #4a90d9; color: #4a90d9; }
+.color-row .copy-btn.copied { border-color: #27ae60; color: #27ae60; }
+
+/* Bar chart for RGB% / CMYK% */
+.bar-group { margin-bottom: 10px; }
+.bar-group:last-child { margin-bottom: 0; }
+.bar-group .group-title { font-size: 12px; color: #95a5a6; letter-spacing: 1px; margin-bottom: 6px; }
+.bar-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+.bar-row .bar-label { width: 18px; font-size: 12px; font-weight: 700; color: #7f8c8d; text-align: center; flex-shrink: 0; }
+.bar-row .bar-track { flex: 1; height: 12px; background: #eef0f3; border-radius: 6px; overflow: hidden; }
+.bar-row .bar-fill { height: 100%; border-radius: 6px; transition: width .3s; min-width: 0; }
+.bar-row .bar-val { width: 38px; font-size: 12px; color: #7f8c8d; text-align: right; flex-shrink: 0; font-family: "SF Mono","Consolas","Microsoft YaHei",monospace; }
+
+/* B&W preview */
+.preview-row { display: flex; gap: 14px; }
+.preview-box { flex: 1; border-radius: 8px; overflow: hidden; }
+.preview-box .bg-label { font-size: 11px; padding: 5px 0; text-align: center; letter-spacing: 1px; }
+.preview-swatch {
+  height: 140px; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.preview-inner {
+  width: 100%; height: 100%; border-radius: 6px; min-height: 60px;
+}
+
+/* History */
+.history-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.history-dot {
+  width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+  border: 2px solid transparent; transition: border-color .15s, transform .15s;
+}
+.history-dot:hover { border-color: #4a90d9; transform: scale(1.12); }
+
+/* ── Bottom sections ── */
+.sections-area { width: 100%; display: flex; flex-direction: column; gap: 20px; padding-bottom: 40px; }
+
+.section-card { background: #F1EEF9; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.06); padding: 22px 24px; }
+.section-title { font-size: 14px; letter-spacing: 2px; margin-bottom: 16px; font-weight: 700; color: #1a1a2e; }
+
+/* Swatch bars (shades / tints / tones) */
+.swatch-bar { display: flex; gap: 0; }
+.swatch-block { flex: 1; cursor: pointer; transition: transform .12s, box-shadow .12s; position: relative; min-width: 0; background: #F1EEF9; }
+.swatch-block:hover { transform: scale(1.06); z-index: 2; box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+.swatch-block .swatch-color { height: 56px; }
+.swatch-block .swatch-label {
+  font-size: 10px; color: #7f8c8d; text-align: center; padding: 6px 2px;
+  font-family: "SF Mono","Consolas","Microsoft YaHei",monospace;
+  letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Scheme grids */
+.scheme-row { display: flex; gap: 12px; }
+.scheme-item { flex: 1; cursor: pointer; transition: transform .12s; border-radius: 8px; overflow: hidden; background: #F1EEF9; }
+.scheme-item:hover { transform: scale(1.04); box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+.scheme-color { height: 80px; }
+.scheme-label {
+  font-size: 11px; color: #7f8c8d; text-align: center; padding: 8px 4px;
+  font-family: "SF Mono","Consolas","Microsoft YaHei",monospace; letter-spacing: .5px;
+}
+
+/* Toast */
+.toast {
+  position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+  background: #2c3e50; color: #fff; padding: 8px 22px; border-radius: 20px;
+  font-size: 13px; letter-spacing: 1px; opacity: 0; transition: opacity .25s;
+  z-index: 100; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+footer { padding: 0 0 24px; font-size: 11px; color: #c0c8d0; letter-spacing: 2px; flex-shrink: 0; }
+
+@media (max-width: 800px) {
+  main { flex-direction: column; width: 100%; }
+  .right-panel { width: 100%; }
+  .left-panel { aspect-ratio: auto; min-height: 320px; }
+  .swatch-bar { flex-wrap: wrap; }
+  .swatch-block { flex: 1 1 20%; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+<header>
+  <h1>color-pick</h1>
+</header>
+
+<main>
+  <!-- Left: Image Area -->
+  <section class="left-panel" id="leftPanel">
+    <div class="canvas-area" id="canvasArea">
+      <div class="upload-zone" id="uploadZone">
+        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="#7f8c8d" stroke-width="1.2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+          <path d="m21 15-5-5L5 21"/>
+        </svg>
+        <span class="hint">拖拽图片到此处，或 Ctrl+V 粘贴剪贴板图片</span>
+        <span class="sub-hint">支持 PNG / JPG / WebP / GIF 格式</span>
+        <label class="btn">选择文件<input type="file" accept="image/*" hidden id="fileInput"></label>
+      </div>
+      <div class="canvas-wrap" id="canvasWrap" style="display:none">
+        <canvas id="mainCanvas"></canvas>
+        <button class="replace-btn" id="replaceBtn" title="替换图片">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          替换图片
+        </button>
+      </div>
+    </div>
+    <div class="loupe-area" id="loupeArea">
+      <div class="loupe" id="loupe">
+        <canvas id="loupeCanvas"></canvas>
+        <div class="crosshair"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right: Color Info -->
+  <aside class="right-panel" id="rightPanel">
+    <div class="card" id="colorCard">
+      <div class="card-title">拾取的颜色</div>
+      <div class="swatch-large" id="swatchLarge"></div>
+      <div class="color-row"><span class="label">HEX</span><span class="value" id="valHex">—</span><button class="copy-btn" data-format="hex">复制</button></div>
+      <div class="color-row"><span class="label">RGB</span><span class="value" id="valRgb">—</span><button class="copy-btn" data-format="rgb">复制</button></div>
+      <div class="color-row"><span class="label">HSL</span><span class="value" id="valHsl">—</span><button class="copy-btn" data-format="hsl">复制</button></div>
+      <div class="bar-group">
+        <div class="group-title">RGB 百分比</div>
+        <div class="bar-row"><span class="bar-label" style="color:#e74c3c">R</span><div class="bar-track"><div class="bar-fill" id="barR" style="width:0;background:#e74c3c"></div></div><span class="bar-val" id="valBarR">—</span></div>
+        <div class="bar-row"><span class="bar-label" style="color:#2ecc71">G</span><div class="bar-track"><div class="bar-fill" id="barG" style="width:0;background:#2ecc71"></div></div><span class="bar-val" id="valBarG">—</span></div>
+        <div class="bar-row"><span class="bar-label" style="color:#3498db">B</span><div class="bar-track"><div class="bar-fill" id="barB" style="width:0;background:#3498db"></div></div><span class="bar-val" id="valBarB">—</span></div>
+      </div>
+      <div class="bar-group">
+        <div class="group-title">CMYK 百分比</div>
+        <div class="bar-row"><span class="bar-label" style="color:#00bcd4">C</span><div class="bar-track"><div class="bar-fill" id="barC" style="width:0;background:#00bcd4"></div></div><span class="bar-val" id="valBarC">—</span></div>
+        <div class="bar-row"><span class="bar-label" style="color:#e91e63">M</span><div class="bar-track"><div class="bar-fill" id="barM" style="width:0;background:#e91e63"></div></div><span class="bar-val" id="valBarM">—</span></div>
+        <div class="bar-row"><span class="bar-label" style="color:#ffc107">Y</span><div class="bar-track"><div class="bar-fill" id="barY" style="width:0;background:#ffc107"></div></div><span class="bar-val" id="valBarY">—</span></div>
+        <div class="bar-row"><span class="bar-label" style="color:#555">K</span><div class="bar-track"><div class="bar-fill" id="barK" style="width:0;background:#555"></div></div><span class="bar-val" id="valBarK">—</span></div>
+      </div>
+    </div>
+
+    <div class="card" id="previewCard">
+      <div class="card-title">背景预览</div>
+      <div class="preview-row">
+        <div class="preview-box">
+          <div class="preview-swatch" style="background:#000000"><div class="preview-inner" id="previewBlack"></div></div>
+          <div class="bg-label" style="background:#000000;color:#aaa">黑底效果</div>
+        </div>
+        <div class="preview-box">
+          <div class="preview-swatch" style="background:#FFFFFF"><div class="preview-inner" id="previewWhite"></div></div>
+          <div class="bg-label" style="background:#FFFFFF;color:#999">白底效果</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="historyCard">
+      <div class="card-title">历史颜色</div>
+      <div class="history-row" id="historyRow"></div>
+    </div>
+  </aside>
+</main>
+
+<!-- Bottom sections -->
+<div class="sections-area" id="sectionsArea">
+
+  <section class="section-card" id="shadesSection">
+    <div class="section-title">色阶 — 暗色（加深）</div>
+    <div class="swatch-bar" id="shadesBar"></div>
+  </section>
+
+  <section class="section-card" id="tintsSection">
+    <div class="section-title">色阶 — 亮色（减淡）</div>
+    <div class="swatch-bar" id="tintsBar"></div>
+  </section>
+
+  <section class="section-card" id="tonesSection">
+    <div class="section-title">色调 — 加入灰色</div>
+    <div class="swatch-bar" id="tonesBar"></div>
+  </section>
+
+  <section class="section-card" id="complementarySection">
+    <div class="section-title">互补色</div>
+    <div class="scheme-row" id="complementaryRow"></div>
+  </section>
+
+  <section class="section-card" id="analogousSection">
+    <div class="section-title">类似色</div>
+    <div class="scheme-row" id="analogousRow"></div>
+  </section>
+
+  <section class="section-card" id="triadicSection">
+    <div class="section-title">三色组</div>
+    <div class="scheme-row" id="triadicRow"></div>
+  </section>
+
+  <section class="section-card" id="monoSection">
+    <div class="section-title">单色组</div>
+    <div class="scheme-row" id="monoRow"></div>
+  </section>
+
+</div>
+
+<footer>Pick a pixel, find its soul — every color tells a story</footer>
+
+</div><!-- .page-wrap -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  // ── Elements ──
+  const uploadZone  = document.getElementById('uploadZone');
+  const canvasWrap  = document.getElementById('canvasWrap');
+  const mainCanvas  = document.getElementById('mainCanvas');
+  const loupe       = document.getElementById('loupe');
+  const loupeArea   = document.getElementById('loupeArea');
+  const loupeCanvas = document.getElementById('loupeCanvas');
+  const fileInput   = document.getElementById('fileInput');
+  const swatchLarge = document.getElementById('swatchLarge');
+  const valHex      = document.getElementById('valHex');
+  const valRgb      = document.getElementById('valRgb');
+  const valHsl      = document.getElementById('valHsl');
+  const previewBlack = document.getElementById('previewBlack');
+  const previewWhite = document.getElementById('previewWhite');
+  const historyRow  = document.getElementById('historyRow');
+  const toast       = document.getElementById('toast');
+  const replaceBtn  = document.getElementById('replaceBtn');
+
+  // Bar chart elements
+  const barR = document.getElementById('barR'), valBarR = document.getElementById('valBarR');
+  const barG = document.getElementById('barG'), valBarG = document.getElementById('valBarG');
+  const barB = document.getElementById('barB'), valBarB = document.getElementById('valBarB');
+  const barC = document.getElementById('barC'), valBarC = document.getElementById('valBarC');
+  const barM = document.getElementById('barM'), valBarM = document.getElementById('valBarM');
+  const barY = document.getElementById('barY'), valBarY = document.getElementById('valBarY');
+  const barK = document.getElementById('barK'), valBarK = document.getElementById('valBarK');
+
+  const shadesBar   = document.getElementById('shadesBar');
+  const tintsBar    = document.getElementById('tintsBar');
+  const tonesBar    = document.getElementById('tonesBar');
+  const complementaryRow = document.getElementById('complementaryRow');
+  const analogousRow     = document.getElementById('analogousRow');
+  const triadicRow       = document.getElementById('triadicRow');
+  const monoRow          = document.getElementById('monoRow');
+
+  const ctx  = mainCanvas.getContext('2d', { willReadFrequently: true });
+  const lctx = loupeCanvas.getContext('2d', { willReadFrequently: true });
+
+  // ── State ──
+  let originalImage = null, displayW = 0, displayH = 0;
+  let colorHistory = [];
+  const MAX_HISTORY = 14;
+
+  // ── Color converters ──
+  function rgbToHex(r, g, b) {
+    return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('').toUpperCase();
+  }
+  function hexToRgb(hex) {
+    const v = parseInt(hex.slice(1), 16);
+    return { r: (v>>16)&255, g: (v>>8)&255, b: v&255 };
+  }
+  function rgbToHsl(r, g, b) {
+    r/=255; g/=255; b/=255;
+    const mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+    let h=0, s=0, l=(mx+mn)/2;
+    if(mx!==mn){
+      const d=mx-mn;
+      s=l>.5?d/(2-mx-mn):d/(mx+mn);
+      switch(mx){ case r: h=((g-b)/d+(g<b?6:0))%6; break; case g: h=(b-r)/d+2; break; case b: h=(r-g)/d+4; break; }
+      h*=60;
+    }
+    return { h:Math.round(h), s:Math.round(s*100), l:Math.round(l*100) };
+  }
+  function hslToRgb(h, s, l) {
+    s/=100; l/=100;
+    const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs((h/60)%2-1)), m=l-c/2;
+    let r=0,g=0,b=0;
+    if(h<60){r=c;g=x;} else if(h<120){r=x;g=c;} else if(h<180){g=c;b=x;}
+    else if(h<240){g=x;b=c;} else if(h<300){r=x;b=c;} else {r=c;b=x;}
+    return { r:Math.round((r+m)*255), g:Math.round((g+m)*255), b:Math.round((b+m)*255) };
+  }
+  function rgbToCmyk(r, g, b) {
+    r/=255; g/=255; b/=255;
+    const k = 1 - Math.max(r, g, b);
+    if (k === 1) return { c:0, m:0, y:0, k:100 };
+    const c = Math.round((1-r-k)/(1-k)*100);
+    const m = Math.round((1-g-k)/(1-k)*100);
+    const y = Math.round((1-b-k)/(1-k)*100);
+    return { c, m, y, k: Math.round(k*100) };
+  }
+
+  // ── Toast ──
+  function showToast(msg) {
+    toast.textContent=msg; toast.classList.add('show');
+    clearTimeout(toast._t); toast._t=setTimeout(()=>toast.classList.remove('show'),1500);
+  }
+
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(()=>{
+      btn.classList.add('copied'); btn.textContent='已复制';
+      showToast('已复制 '+text);
+      setTimeout(()=>{btn.classList.remove('copied');btn.textContent='复制';},1500);
+    }).catch(()=>{
+      const ta=document.createElement('textarea'); ta.value=text;
+      ta.style.cssText='position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.classList.add('copied'); btn.textContent='已复制';
+      showToast('已复制 '+text);
+      setTimeout(()=>{btn.classList.remove('copied');btn.textContent='复制';},1500);
+    });
+  }
+
+  // ── Generate swatch bar HTML ──
+  function buildSwatchBar(colors) {
+    return colors.map(c =>
+      `<div class="swatch-block" data-hex="${c.hex}" title="${c.hex}">
+        <div class="swatch-color" style="background:${c.hex}"></div>
+        <div class="swatch-label">${c.hex}</div>
+      </div>`
+    ).join('');
+  }
+
+  function buildSchemeRow(colors) {
+    return colors.map(c =>
+      `<div class="scheme-item" data-hex="${c.hex}" title="${c.hex}">
+        <div class="scheme-color" style="background:${c.hex}"></div>
+        <div class="scheme-label">${c.hex}</div>
+      </div>`
+    ).join('');
+  }
+
+  // ── Shades / Tints / Tones ──
+  function generateShades(r, g, b, count) {
+    const list = [];
+    for (let i = count; i >= 0; i--) {
+      const t = i / count;
+      const sr = Math.round(r * t), sg = Math.round(g * t), sb = Math.round(b * t);
+      const hex = rgbToHex(sr, sg, sb);
+      const { l } = rgbToHsl(sr, sg, sb);
+      list.push({ hex, l });
+    }
+    return list;
+  }
+
+  function generateTints(r, g, b, count) {
+    const list = [];
+    for (let i = 0; i <= count; i++) {
+      const t = i / count;
+      const tr = Math.round(r + (255 - r) * t), tg = Math.round(g + (255 - g) * t), tb = Math.round(b + (255 - b) * t);
+      const hex = rgbToHex(tr, tg, tb);
+      const { l } = rgbToHsl(tr, tg, tb);
+      list.push({ hex, l });
+    }
+    return list;
+  }
+
+  function generateTones(r, g, b, count) {
+    const list = [];
+    const gray = 128;
+    for (let i = 0; i <= count; i++) {
+      const t = i / count;
+      const tr = Math.round(r + (gray - r) * t), tg = Math.round(g + (gray - g) * t), tb = Math.round(b + (gray - b) * t);
+      const hex = rgbToHex(tr, tg, tb);
+      const { l } = rgbToHsl(tr, tg, tb);
+      list.push({ hex, l });
+    }
+    return list;
+  }
+
+  // ── Color schemes ──
+  function schemeColors(hsl, shifts) {
+    return shifts.map(s => {
+      let h = (hsl.h + s.shift + 360) % 360;
+      let sat = s.s != null ? s.s : hsl.s;
+      let lit = s.l != null ? s.l : hsl.l;
+      const rgb = hslToRgb(h, sat, lit);
+      return { hex: rgbToHex(rgb.r, rgb.g, rgb.b) };
+    });
+  }
+
+  // ── Update all displays ──
+  function updateAll(r, g, b) {
+    const hex = rgbToHex(r, g, b);
+    const hsl = rgbToHsl(r, g, b);
+    const cmyk = rgbToCmyk(r, g, b);
+
+    // Core info
+    swatchLarge.style.background = hex;
+    valHex.textContent = hex;
+    valRgb.textContent = `rgb(${r}, ${g}, ${b})`;
+    valHsl.textContent = `hsl(${hsl.h}°, ${hsl.s}%, ${hsl.l}%)`;
+
+
+    // RGB% bars
+    const rPct = Math.round(r/255*100), gPct = Math.round(g/255*100), bPct = Math.round(b/255*100);
+    barR.style.width = rPct + '%'; valBarR.textContent = rPct + '%';
+    barG.style.width = gPct + '%'; valBarG.textContent = gPct + '%';
+    barB.style.width = bPct + '%'; valBarB.textContent = bPct + '%';
+
+    // CMYK bars
+    barC.style.width = cmyk.c + '%'; valBarC.textContent = cmyk.c + '%';
+    barM.style.width = cmyk.m + '%'; valBarM.textContent = cmyk.m + '%';
+    barY.style.width = cmyk.y + '%'; valBarY.textContent = cmyk.y + '%';
+    barK.style.width = cmyk.k + '%'; valBarK.textContent = cmyk.k + '%';
+
+    // Previews
+    previewBlack.style.background = hex;
+    previewWhite.style.background = hex;
+
+    // Shades & Tints & Tones
+    shadesBar.innerHTML = buildSwatchBar(generateShades(r, g, b, 10));
+    tintsBar.innerHTML  = buildSwatchBar(generateTints(r, g, b, 10));
+    tonesBar.innerHTML  = buildSwatchBar(generateTones(r, g, b, 10));
+
+    // Complementary
+    complementaryRow.innerHTML = buildSchemeRow([
+      { hex },
+      ...schemeColors(hsl, [{ shift: 180 }])
+    ]);
+
+    // Analogous (±30°, ±15°)
+    analogousRow.innerHTML = buildSchemeRow(schemeColors(hsl, [
+      { shift: -30 }, { shift: -15 }, { shift: 15 }, { shift: 30 }
+    ]));
+
+    // Triadic
+    triadicRow.innerHTML = buildSchemeRow([
+      { hex },
+      ...schemeColors(hsl, [{ shift: -120 }, { shift: 120 }])
+    ]);
+
+    // Monochromatic
+    monoRow.innerHTML = buildSchemeRow([
+      { hex: rgbToHex(...(function(){
+        const rr = hslToRgb(hsl.h, hsl.s, Math.max(hsl.l - 30, 8));
+        return [rr.r,rr.g,rr.b];
+      })()) },
+      { hex: rgbToHex(...(function(){
+        const rr = hslToRgb(hsl.h, Math.max(hsl.s - 25, 0), hsl.l);
+        return [rr.r,rr.g,rr.b];
+      })()) },
+      { hex },
+      { hex: rgbToHex(...(function(){
+        const rr = hslToRgb(hsl.h, Math.min(hsl.s + 25, 100), hsl.l);
+        return [rr.r,rr.g,rr.b];
+      })()) },
+      { hex: rgbToHex(...(function(){
+        const rr = hslToRgb(hsl.h, hsl.s, Math.min(hsl.l + 30, 92));
+        return [rr.r,rr.g,rr.b];
+      })()) },
+    ]);
+
+    // Bind swatch clicks
+    bindSwatchClicks();
+
+    // History
+    addHistory(hex);
+  }
+
+  function bindSwatchClicks() {
+    document.querySelectorAll('.swatch-block, .scheme-item').forEach(el => {
+      if (el._bound) return; el._bound = true;
+      el.addEventListener('click', () => {
+        const { r, g, b } = hexToRgb(el.dataset.hex);
+        updateAll(r, g, b);
+      });
+    });
+  }
+
+  // ── History ──
+  function addHistory(hex) {
+    colorHistory = colorHistory.filter(h => h !== hex);
+    colorHistory.unshift(hex);
+    if (colorHistory.length > MAX_HISTORY) colorHistory.length = MAX_HISTORY;
+    historyRow.innerHTML = colorHistory.map(h =>
+      `<div class="history-dot" style="background:${h}" data-hex="${h}" title="${h}"></div>`
+    ).join('');
+    historyRow.querySelectorAll('.history-dot').forEach(el => {
+      el.addEventListener('click', () => {
+        const { r, g, b } = hexToRgb(el.dataset.hex);
+        updateAll(r, g, b);
+      });
+    });
+  }
+
+  // ── Canvas interaction ──
+  function canvasPos(e) {
+    const rect = mainCanvas.getBoundingClientRect();
+    return {
+      x: Math.floor((e.clientX - rect.left) / rect.width * originalImage.width),
+      y: Math.floor((e.clientY - rect.top) / rect.height * originalImage.height)
+    };
+  }
+
+  function getPixel(x, y) {
+    if (!originalImage) return null;
+    const buf = document.createElement('canvas');
+    buf.width = originalImage.width; buf.height = originalImage.height;
+    const bctx = buf.getContext('2d');
+    bctx.drawImage(originalImage, 0, 0);
+    const px = bctx.getImageData(Math.min(x, originalImage.width-1), Math.min(y, originalImage.height-1), 1, 1).data;
+    return { r: px[0], g: px[1], b: px[2] };
+  }
+
+  function renderLoupe(origX, origY) {
+    if (!originalImage) return;
+    loupeArea.classList.add('visible');
+
+    const rect = loupe.getBoundingClientRect();
+    const lw = Math.round(rect.width);
+    const lh = Math.round(rect.height);
+    if (lw <= 0 || lh <= 0) return;
+
+    loupeCanvas.width = lw;
+    loupeCanvas.height = lh;
+
+    const ZOOM = 8;
+    const halfW = Math.floor(lw / ZOOM / 2);
+    const halfH = Math.floor(lh / ZOOM / 2);
+    const sx = Math.max(0, Math.min(origX - halfW, originalImage.width - halfW * 2));
+    const sy = Math.max(0, Math.min(origY - halfH, originalImage.height - halfH * 2));
+    const sw = Math.min(halfW * 2, originalImage.width - sx);
+    const sh = Math.min(halfH * 2, originalImage.height - sy);
+
+    lctx.imageSmoothingEnabled = false;
+    lctx.clearRect(0, 0, lw, lh);
+    // checkerboard for transparency
+    const grid = 10;
+    for (let i = 0; i < Math.ceil(lw/grid); i++)
+      for (let j = 0; j < Math.ceil(lh/grid); j++)
+        { lctx.fillStyle = (i+j)%2===0?'#e8e8e8':'#fff'; lctx.fillRect(i*grid, j*grid, grid, grid); }
+    lctx.drawImage(originalImage, sx, sy, sw, sh, 0, 0, lw, lh);
+  }
+
+  function hideLoupe() { loupeArea.classList.remove('visible'); }
+
+  mainCanvas.addEventListener('mousemove', e => {
+    if (!originalImage) return;
+    const { x, y } = canvasPos(e);
+    if (x<0||y<0||x>=originalImage.width||y>=originalImage.height) { hideLoupe(); return; }
+    renderLoupe(x, y);
+  });
+  mainCanvas.addEventListener('click', e => {
+    if (!originalImage) return;
+    const { x, y } = canvasPos(e);
+    if (x<0||y<0||x>=originalImage.width||y>=originalImage.height) return;
+    const px = getPixel(x, y);
+    if (px) updateAll(px.r, px.g, px.b);
+  });
+
+  // ── Load image ──
+  function loadImage(source) {
+    const img = new Image();
+    img.onload = () => {
+      originalImage = img;
+      uploadZone.style.display = 'none';
+      canvasWrap.style.display = 'flex';
+      requestAnimationFrame(() => renderImage());
+    };
+    img.onerror = () => showToast('图片加载失败，请重试');
+    img.src = typeof source === 'string' ? source : URL.createObjectURL(source);
+  }
+
+  function renderImage() {
+    if (!originalImage) return;
+    const rect = canvasWrap.getBoundingClientRect();
+    const maxW = rect.width || canvasWrap.parentElement.clientWidth;
+    const maxH = rect.height || canvasWrap.parentElement.clientHeight;
+    const ratio = Math.min(maxW/originalImage.width, maxH/originalImage.height, 1);
+    displayW = Math.round(originalImage.width * ratio);
+    displayH = Math.round(originalImage.height * ratio);
+    mainCanvas.width = displayW; mainCanvas.height = displayH;
+    ctx.clearRect(0, 0, displayW, displayH);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(originalImage, 0, 0, displayW, displayH);
+  }
+
+  // ── Replace image ──
+  replaceBtn.addEventListener('click', () => {
+    originalImage = null;
+    displayW = 0; displayH = 0;
+    mainCanvas.width = 0; mainCanvas.height = 0;
+    ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    canvasWrap.style.display = 'none';
+    uploadZone.style.display = 'flex';
+    loupeArea.classList.remove('visible');
+    fileInput.value = '';
+  });
+
+  // ── Upload handlers ──
+  uploadZone.addEventListener('click', e => {
+    if (e.target.tagName==='LABEL'||e.target.tagName==='INPUT') return;
+    fileInput.click();
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) loadImage(fileInput.files[0]);
+  });
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+  uploadZone.addEventListener('dragleave', () => { uploadZone.classList.remove('drag-over'); });
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault(); uploadZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f&&f.type.startsWith('image/')) loadImage(f); else showToast('请拖入图片文件');
+  });
+
+  // ── Clipboard ──
+  document.addEventListener('paste', e => {
+    const items = e.clipboardData?.items; if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) { e.preventDefault(); loadImage(item.getAsFile()); return; }
+    }
+  });
+
+  // ── Copy buttons ──
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fmt = btn.dataset.format;
+      let text = '';
+      if (fmt==='hex') text=valHex.textContent;
+      if (fmt==='rgb') text=valRgb.textContent;
+      if (fmt==='hsl') text=valHsl.textContent;
+      if (text&&text!=='—') copyText(text, btn);
+    });
+  });
+
+  window.addEventListener('resize', () => { if (originalImage) renderImage(); });
+
+  // ── Init with default ──
+  updateAll(13, 144, 99);
+})();
+</script>
+</body>
+</html>
