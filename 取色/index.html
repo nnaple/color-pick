@@ -223,12 +223,79 @@ main {
 
 footer { padding: 0 0 24px; font-size: 11px; color: #c0c8d0; letter-spacing: 2px; flex-shrink: 0; }
 
-@media (max-width: 800px) {
-  main { flex-direction: column; width: 100%; }
-  .right-panel { width: 100%; }
-  .left-panel { aspect-ratio: auto; min-height: 320px; }
+@media (max-width: 768px) {
+  .page-wrap { max-width: 100vw; }
+  header { padding: 16px 0 12px; }
+  header h1 { font-size: 26px; letter-spacing: 4px; }
+
+  main { flex-direction: column; width: 100%; gap: 10px; padding: 0 8px 16px; }
+
+  .left-panel { flex: auto; }
+  .canvas-area { aspect-ratio: auto; min-height: 260px; border-radius: 10px; }
+
+  /* Upload zone - must be clearly visible */
+  .upload-zone {
+    gap: 10px; border-radius: 10px; padding: 16px;
+    border: 2px dashed #b0b8c1;
+  }
+  .upload-icon { width: 44px; height: 44px; }
+  .upload-zone .hint { font-size: 13px; text-align: center; padding: 0 8px; line-height: 1.5; }
+  .upload-zone .sub-hint { font-size: 11px; }
+  .upload-zone .btn { padding: 10px 30px; font-size: 14px; }
+
+  /* Replace button */
+  .replace-btn { top: 8px; right: 8px; padding: 8px 12px; font-size: 12px; border-radius: 16px; }
+
+  /* Loupe */
+  .loupe-area { margin-top: 8px; padding: 8px; border-radius: 10px; }
+  .loupe { height: 120px; max-width: 100%; }
+
+  /* Right panel */
+  .right-panel { width: 100%; gap: 10px; }
+  .card { padding: 12px 14px; border-radius: 10px; }
+  .card-title { font-size: 12px; margin-bottom: 8px; }
+  .swatch-large { height: 52px; margin-bottom: 10px; }
+  .color-row { font-size: 12px; padding: 4px 0; }
+  .color-row .label { font-size: 11px; min-width: 36px; }
+  .color-row .value { font-size: 11px; }
+  .color-row .copy-btn { padding: 3px 8px; font-size: 10px; }
+
+  /* Bar charts */
+  .bar-group { margin-bottom: 8px; }
+  .bar-group .group-title { font-size: 11px; margin-bottom: 5px; }
+  .bar-row { gap: 5px; padding: 2px 0; }
+  .bar-row .bar-label { font-size: 11px; width: 14px; }
+  .bar-row .bar-track { height: 10px; }
+  .bar-row .bar-val { font-size: 10px; width: 30px; }
+
+  /* Previews */
+  .preview-row { gap: 10px; }
+  .preview-swatch { height: 90px; padding: 12px; }
+  .preview-inner { min-height: 40px; }
+  .preview-box .bg-label { font-size: 10px; }
+
+  /* History */
+  .history-dot { width: 24px; height: 24px; }
+  .history-row { gap: 6px; }
+
+  /* Bottom sections */
+  .sections-area { gap: 12px; padding: 0 8px 30px; }
+  .section-card { padding: 14px 12px; border-radius: 10px; }
+  .section-title { font-size: 12px; margin-bottom: 10px; letter-spacing: 1px; }
+
+  /* Swatch bars */
   .swatch-bar { flex-wrap: wrap; }
-  .swatch-block { flex: 1 1 20%; }
+  .swatch-block { flex: 1 1 10%; min-width: 32px; }
+  .swatch-block .swatch-color { height: 36px; }
+  .swatch-block .swatch-label { font-size: 8px; padding: 3px 1px; }
+
+  /* Scheme rows */
+  .scheme-row { flex-wrap: wrap; gap: 8px; }
+  .scheme-item { flex: 1 1 30%; min-width: 80px; }
+  .scheme-color { height: 50px; }
+  .scheme-label { font-size: 9px; padding: 5px 2px; }
+
+  footer { font-size: 10px; letter-spacing: 1px; }
 }
 </style>
 </head>
