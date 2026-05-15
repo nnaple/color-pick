@@ -400,6 +400,11 @@ footer { padding: 0 0 24px; font-size: 11px; color: #c0c8d0; letter-spacing: 2px
     <div class="swatch-bar" id="tonesBar"></div>
   </section>
 
+  <section class="section-card" id="satSection">
+    <div class="section-title">饱和度 — 降低 / 提升</div>
+    <div class="swatch-bar" id="satBar"></div>
+  </section>
+
   <section class="section-card" id="complementarySection">
     <div class="section-title">互补色</div>
     <div class="scheme-row" id="complementaryRow"></div>
@@ -460,6 +465,7 @@ footer { padding: 0 0 24px; font-size: 11px; color: #c0c8d0; letter-spacing: 2px
   const shadesBar   = document.getElementById('shadesBar');
   const tintsBar    = document.getElementById('tintsBar');
   const tonesBar    = document.getElementById('tonesBar');
+  const satBar      = document.getElementById('satBar');
   const complementaryRow = document.getElementById('complementaryRow');
   const analogousRow     = document.getElementById('analogousRow');
   const triadicRow       = document.getElementById('triadicRow');
@@ -590,6 +596,23 @@ footer { padding: 0 0 24px; font-size: 11px; color: #c0c8d0; letter-spacing: 2px
     return list;
   }
 
+  function generateSatVariations(r, g, b, count) {
+    const hsl = rgbToHsl(r, g, b);
+    const half = Math.floor(count / 2);
+    const list = [];
+    for (let i = 0; i <= count; i++) {
+      const t = (i - half) / half; // -1 to +1
+      let sat;
+      if (t <= 0) sat = Math.round(hsl.s + t * hsl.s);          // decrease to 0%
+      else       sat = Math.round(hsl.s + t * (100 - hsl.s));   // increase to 100%
+      sat = Math.max(0, Math.min(100, sat));
+      const rgb = hslToRgb(hsl.h, sat, hsl.l);
+      const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+      list.push({ hex, l: rgbToHsl(rgb.r, rgb.g, rgb.b).l });
+    }
+    return list;
+  }
+
   // ── Color schemes ──
   function schemeColors(hsl, shifts) {
     return shifts.map(s => {
@@ -634,6 +657,7 @@ footer { padding: 0 0 24px; font-size: 11px; color: #c0c8d0; letter-spacing: 2px
     shadesBar.innerHTML = buildSwatchBar(generateShades(r, g, b, 10));
     tintsBar.innerHTML  = buildSwatchBar(generateTints(r, g, b, 10));
     tonesBar.innerHTML  = buildSwatchBar(generateTones(r, g, b, 10));
+    satBar.innerHTML    = buildSwatchBar(generateSatVariations(r, g, b, 10));
 
     // Complementary
     complementaryRow.innerHTML = buildSchemeRow([
