@@ -12,10 +12,13 @@ body {
   background: #d5d8dd;
   color: #2c3e50;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   user-select: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .page-wrap {
@@ -91,7 +94,7 @@ main {
   display: flex; align-items: center; justify-content: center;
   overflow: hidden; cursor: crosshair;
 }
-.canvas-wrap canvas { max-width: 100%; max-height: 100%; display: block; }
+.canvas-wrap canvas { max-width: 100%; max-height: 100%; display: block; touch-action: manipulation; }
 
 /* Replace image button */
 .replace-btn {
