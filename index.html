@@ -597,18 +597,42 @@ footer { padding: 0 0 24px; font-size: 11px; color: #c0c8d0; letter-spacing: 2px
   }
 
   function generateSatVariations(r, g, b, count) {
+    // Use HSV saturation (perceptually accurate)
     const hsl = rgbToHsl(r, g, b);
+    const max = Math.max(r, g, b) / 255;
+    const min = Math.min(r, g, b) / 255;
+    const hsvS = max === 0 ? 0 : (max - min) / max;
+
     const half = Math.floor(count / 2);
     const list = [];
     for (let i = 0; i <= count; i++) {
       const t = (i - half) / half; // -1 to +1
-      let sat;
-      if (t <= 0) sat = Math.round(hsl.s + t * hsl.s);          // decrease to 0%
-      else       sat = Math.round(hsl.s + t * (100 - hsl.s));   // increase to 100%
-      sat = Math.max(0, Math.min(100, sat));
-      const rgb = hslToRgb(hsl.h, sat, hsl.l);
-      const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
-      list.push({ hex, l: rgbToHsl(rgb.r, rgb.g, rgb.b).l });
+      let s;
+      if (t <= 0) s = hsvS + t * hsvS;              // decrease to 0
+      else        s = hsvS + t * (1 - hsvS);         // increase to 1
+      s = Math.max(0, Math.min(1, s));
+
+      // HSV → RGB, keeping H and V from original
+      const h = hsl.h / 60;
+      const hi = Math.floor(h) % 6;
+      const f = h - Math.floor(h);
+      const v = max;
+      const p = v * (1 - s);
+      const q = v * (1 - s * f);
+      const t2 = v * (1 - s * (1 - f));
+      let rr, gg, bb;
+      switch (hi) {
+        case 0: rr = v; gg = t2; bb = p; break;
+        case 1: rr = q; gg = v; bb = p; break;
+        case 2: rr = p; gg = v; bb = t2; break;
+        case 3: rr = p; gg = q; bb = v; break;
+        case 4: rr = t2; gg = p; bb = v; break;
+        case 5: rr = v; gg = p; bb = q; break;
+        default: rr = gg = bb = 0;
+      }
+      const hex = rgbToHex(Math.round(rr*255), Math.round(gg*255), Math.round(bb*255));
+      const rv = Math.round(rr*255), gv = Math.round(gg*255), bv = Math.round(bb*255);
+      list.push({ hex, l: rgbToHsl(rv, gv, bv).l });
     }
     return list;
   }
