@@ -231,17 +231,14 @@ footer { padding: 0 0 24px; font-size: 11px; color: #c0c8d0; letter-spacing: 2px
   main { flex-direction: column; width: 100%; gap: 10px; padding: 0 8px 16px; }
 
   .left-panel { flex: auto; }
-  .canvas-area { aspect-ratio: auto; min-height: 260px; border-radius: 10px; }
+  .canvas-area { border-radius: 10px; }
 
-  /* Upload zone - must be clearly visible */
-  .upload-zone {
-    gap: 10px; border-radius: 10px; padding: 16px;
-    border: 2px dashed #b0b8c1;
-  }
-  .upload-icon { width: 44px; height: 44px; }
-  .upload-zone .hint { font-size: 13px; text-align: center; padding: 0 8px; line-height: 1.5; }
+  /* Upload zone */
+  .upload-zone { gap: 8px; border-radius: 10px; border-width: 2px; }
+  .upload-icon { width: 40px; height: 40px; }
+  .upload-zone .hint { font-size: 13px; padding: 0 6px; line-height: 1.4; }
   .upload-zone .sub-hint { font-size: 11px; }
-  .upload-zone .btn { padding: 10px 30px; font-size: 14px; }
+  .upload-zone .btn { padding: 10px 26px; font-size: 14px; }
 
   /* Replace button */
   .replace-btn { top: 8px; right: 8px; padding: 8px 12px; font-size: 12px; border-radius: 16px; }
